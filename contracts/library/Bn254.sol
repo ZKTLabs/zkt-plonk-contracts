@@ -76,10 +76,6 @@ library Bn254 {
         return lhs == rhs;
     }
 
-    function zero() internal pure returns (G1Affine memory) {
-        return G1Affine(0, 0);
-    }
-
     function copy(G1Affine memory self, G1Affine memory other) internal pure {
         self.x = other.x;
         self.y = other.y;
@@ -138,12 +134,10 @@ library Bn254 {
             return;
         } else {
             uint256[4] memory input;
-            unchecked {
-                input[0] = p1.x;
-                input[1] = p1.y;
-                input[2] = p2.x;
-                input[3] = p2.y;
-            }
+            input[0] = p1.x;
+            input[1] = p1.y;
+            input[2] = p2.x;
+            input[3] = p2.y;
 
             bool success;
             // solhint-disable-next-line no-inline-assembly
@@ -176,10 +170,10 @@ library Bn254 {
             }
         } else {
             uint256[4] memory input;
+            input[0] = p1.x;
+            input[1] = p1.y;
+            input[2] = p2.x;
             unchecked {
-                input[0] = p1.x;
-                input[1] = p1.y;
-                input[2] = p2.x;
                 input[3] = Q_MOD - p2.y;
             }
 
@@ -202,11 +196,9 @@ library Bn254 {
 
     function mulInto(G1Affine memory p, uint256 s, G1Affine memory dest) internal view {
         uint256[3] memory input;
-        unchecked {
-            input[0] = p.x;
-            input[1] = p.y;
-            input[2] = s;
-        }
+        input[0] = p.x;
+        input[1] = p.y;
+        input[2] = s;
 
         bool success;
         // solhint-disable-next-line no-inline-assembly

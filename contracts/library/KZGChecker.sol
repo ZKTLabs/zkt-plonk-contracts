@@ -80,11 +80,11 @@ library KZGChecker {
         Bn254.G2Affine memory h = H();
         Bn254.G2Affine memory betaH = BetaH();
 
-        uint256 tmpFr;
         uint256 u = 1;
-        Bn254.G1Affine memory partA = Bn254.G1Affine(0, 0);
-        Bn254.G1Affine memory partB = Bn254.G1Affine(0, 0);
-        Bn254.G1Affine memory tmpG1 = Bn254.G1Affine(0, 0);
+        uint256 tmpFr;
+        Bn254.G1Affine memory partA;
+        Bn254.G1Affine memory partB;
+        Bn254.G1Affine memory tmpG1;
         for (uint256 i = 0; i < points.length; i++) {
             tmpG1.copy(openings[i]);
             tmpG1.mulAssign(u);
