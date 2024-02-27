@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./interface/IPoseidon.sol";
+import "../interface/IPoseidon.sol";
 
 error IncrementalMerkleTree__MerkleTreeCapacity();
 
