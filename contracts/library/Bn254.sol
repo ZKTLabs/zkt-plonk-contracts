@@ -251,4 +251,8 @@ library Bn254 {
         }
         return pairing(g1, g2);
     }
+
+    function snarkHash(bytes memory data) internal pure returns (uint256) {
+        return uint256(keccak256(data)) % R_MOD;
+    }
 }
