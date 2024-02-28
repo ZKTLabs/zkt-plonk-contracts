@@ -5,39 +5,30 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./IncrementalMerkleTree.sol";
 import "../library/Bn254.sol";
+import "../library/SnarkVerifier.sol";
+import "../interface/IPrivacyTokenPool.sol";
 
 
-error PrivacyTokenPool__MsgValueInvalid();
-error PrivacyTokenPool__ZeroAddress();
-
-contract PrivacyTokenPool is IncrementalMerkleTree, ReentrancyGuard {
+contract PrivacyTokenPool is
+    IPrivacyTokenPool,
+    IncrementalMerkleTree,
+    ReentrancyGuard
+{
     using Bn254 for bytes;
     using SafeERC20 for IERC20;
 
-    address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
-    // emit the raw commitment, stamped leaf, plus the data to reconstruct the stamped commitment
-    event Deposit(
-        bytes32 indexed commitment,
-        bytes32 indexed leaf,
-        address indexed token,
-        uint256 amount,
-        uint256 leafIndex,
-        uint256 timestamp
-    );
-    // emit the subsetRoot with each withdrawal
-    event Withdrawal(
-        address recipient,
-        address indexed relayer,
-        bytes32 indexed subsetRoot,
-        bytes32 nullifier,
-        uint256 fee
-    );
-
     // double spend records
-    mapping(bytes32 => bool) public nullifiers;
+    mapping(bytes32 => bool) public usedNullifiers;
+    address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    SnarkVerifier.VerifierKey public vk;
 
-    constructor(address poseidon) IncrementalMerkleTree(poseidon) {}
+    constructor(
+        address poseidon,
+        SnarkVerifier.VerifierKey memory _vk
+    ) IncrementalMerkleTree(poseidon)
+    {
+        vk = _vk;
+    }
 
     /*
         Deposit any asset and any amount.
@@ -46,7 +37,7 @@ contract PrivacyTokenPool is IncrementalMerkleTree, ReentrancyGuard {
         bytes32 commitment,
         address token,
         uint256 amount
-    ) public payable nonReentrant returns (uint256) {
+    ) external payable nonReentrant returns (uint256) {
         if (token == address(0)) revert PrivacyTokenPool__ZeroAddress();
         bytes32 assetMetadata = bytes32(abi.encodePacked(token, amount).snarkHash());
         bytes32 leaf = hasher.poseidon([commitment, assetMetadata]);
@@ -67,5 +58,46 @@ contract PrivacyTokenPool is IncrementalMerkleTree, ReentrancyGuard {
             IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         }
         return leafIndex;
+    }
+
+    /*
+        Withdraw using zkProof.
+    */
+    function withdraw(
+        bytes32 root,
+        bytes32[] calldata nullifiers,
+        SnarkVerifier.Proof calldata proof,
+        address token,
+        uint256 amount,
+        address recipient,
+        bytes32 newLeaf
+    ) external nonReentrant {
+        if (nullifiers.length != 3) revert PrivacyTokenPool__InvalidNullifiers();
+        for (uint idx = 0; idx < nullifiers.length; idx++) {
+            if (usedNullifiers[nullifiers[idx]]) revert PrivacyTokenPool__NoteAlreadySpent();
+            usedNullifiers[nullifiers[idx]] = true;
+        }
+        if (!isKnownRoot(root)) revert PrivacyTokenPool__UnknownRoot();
+        if (recipient == address(0) || token == address(0)) revert PrivacyTokenPool__ZeroAddress();
+        uint256[] memory publicInputs = new uint256[](5);
+        publicInputs[0] = uint256(root);
+        publicInputs[1] = uint256(nullifiers[0]);
+        publicInputs[2] = uint256(nullifiers[1]);
+        publicInputs[3] = uint256(nullifiers[2]);
+        publicInputs[4] = amount;
+        if (!SnarkVerifier.verify(proof, vk, publicInputs)) revert PrivacyTokenPool__InvalidZKProof();
+        emit Withdrawal(
+            recipient,
+            amount,
+            nullifiers
+        );
+
+        // insert new leaf to merkle tree
+        insert(newLeaf);
+        if (token == ETH) {
+            payable(recipient).transfer(amount);
+        } else {
+            IERC20(token).safeTransfer(recipient, amount);
+        }
     }
 }

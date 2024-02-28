@@ -86,7 +86,7 @@ library SnarkVerifier {
     }
 
     function seedTranscript(
-        VerifierKey calldata vk,
+        VerifierKey memory vk,
         TranscriptProtocol.Transcript memory transcript
     ) internal pure {
         transcript.appendUint64(Domain.SIZE);
@@ -103,8 +103,8 @@ library SnarkVerifier {
     }
 
     function validatePublicInputs(
-        VerifierKey calldata vk,
-        uint256[] calldata publicInputs
+        VerifierKey memory vk,
+        uint256[] memory publicInputs
     ) internal pure {
         if (vk.piIndex.length != publicInputs.length) {
             revert MismatchedLength(vk.piIndex.length, publicInputs.length);
@@ -116,7 +116,7 @@ library SnarkVerifier {
         }
     }
 
-    function validateProof(Proof calldata proof) internal pure {
+    function validateProof(Proof memory proof) internal pure {
         require(proof.a.isScalar(), "Proof: a is invalid");
         require(proof.b.isScalar(), "Proof: b is invalid");
         require(proof.c.isScalar(), "Proof: c is invalid");
@@ -146,9 +146,9 @@ library SnarkVerifier {
     }
 
     function generateChallenges(
-        Proof calldata proof,
-        VerifierKey calldata vk,
-        uint256[] calldata publicInputs
+        Proof memory proof,
+        VerifierKey memory vk,
+        uint256[] memory publicInputs
     ) internal pure returns (Challenges memory) {
         // build transcript
         TranscriptProtocol.Transcript memory transcript = TranscriptProtocol.newTranscript();
@@ -218,9 +218,9 @@ library SnarkVerifier {
     }
 
     function computeLinearEvaluation(
-        Proof calldata proof,
-        VerifierKey calldata vk,
-        uint256[] calldata publicInputs,
+        Proof memory proof,
+        VerifierKey memory vk,
+        uint256[] memory publicInputs,
         Challenges memory challenges,
         uint256 zhEval,
         uint256 firstLagrangeEval
@@ -260,7 +260,7 @@ library SnarkVerifier {
     }
 
     function computeBatchedEvaluations(
-        Proof calldata proof,
+        Proof memory proof,
         Challenges memory challenges
     ) internal pure returns (uint256) {
         return challenges.etas[0].mul(proof.a)
@@ -274,7 +274,7 @@ library SnarkVerifier {
     }
 
     function computeShiftedBatchedEvaluations(
-        Proof calldata proof,
+        Proof memory proof,
         Challenges memory challenges
     ) internal pure returns (uint256) {
         return challenges.etas[0].mul(proof.z1Next)
@@ -285,8 +285,8 @@ library SnarkVerifier {
 
     function processArithLinearComm(
         Bn254.G1Affine memory commitment,
-        Proof calldata proof,
-        VerifierKey calldata vk
+        Proof memory proof,
+        VerifierKey memory vk
     ) internal view {
         Bn254.G1Affine memory tmpComm;
 
@@ -307,8 +307,8 @@ library SnarkVerifier {
 
     function processPermLinearComm(
         Bn254.G1Affine memory commitment,
-        Proof calldata proof,
-        VerifierKey calldata vk,
+        Proof memory proof,
+        VerifierKey memory vk,
         Challenges memory challenges,
         uint256 firstLagrangeEval
     ) internal view {
@@ -336,8 +336,8 @@ library SnarkVerifier {
 
     function processLookupLinearComm(
         Bn254.G1Affine memory commitment,
-        Proof calldata proof,
-        VerifierKey calldata vk,
+        Proof memory proof,
+        VerifierKey memory vk,
         Challenges memory challenges,
         uint256 firstLagrangeEval
     ) internal view {
@@ -370,8 +370,8 @@ library SnarkVerifier {
 
     function processLinearComm(
         Bn254.G1Affine memory commitment,
-        Proof calldata proof,
-        VerifierKey calldata vk,
+        Proof memory proof,
+        VerifierKey memory vk,
         Challenges memory challenges,
         uint256 zhEval,
         uint256 firstLagrangeEval
@@ -397,8 +397,8 @@ library SnarkVerifier {
 
     function processBatchedComm(
         Bn254.G1Affine memory commitment,
-        Proof calldata proof,
-        VerifierKey calldata vk,
+        Proof memory proof,
+        VerifierKey memory vk,
         Challenges memory challenges
     ) internal view {
         Bn254.G1Affine memory tmpComm;
@@ -429,9 +429,9 @@ library SnarkVerifier {
     }
 
     function verify(
-        Proof calldata proof,
-        VerifierKey calldata vk,
-        uint256[] calldata publicInputs
+        Proof memory proof,
+        VerifierKey memory vk,
+        uint256[] memory publicInputs
     ) internal view returns (bool) {
         // validate public inputs and proof
         validatePublicInputs(vk, publicInputs);
